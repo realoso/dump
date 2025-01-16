@@ -44,10 +44,17 @@ def is_nvidia_optimus():
     xorg_check = check_xorg_log()
     prime_check = check_prime_select()
 
-    return (nvidia_prime or bumblebee) and (drm_check or xorg_check or prime_check)
+    has_nvidia = nvidia_prime or bumblebee or xorg_check
+    has_other_gpu = drm_check  # Überprüfen, ob mindestens eine andere GPU vorhanden ist
+
+    return has_nvidia, has_other_gpu
 
 if __name__ == "__main__":
-    if is_nvidia_optimus():
-        print("NVIDIA Optimus-Konfiguration erkannt.")
+    has_nvidia, has_other_gpu = is_nvidia_optimus()
+    
+    if has_nvidia and has_other_gpu:
+        print("NVIDIA Optimus-Konfiguration wahrscheinlich vorhanden.")
+    elif has_nvidia:
+        print("NVIDIA-Grafikkarte erkannt, aber keine andere GPU gefunden.")
     else:
         print("Keine NVIDIA Optimus-Konfiguration erkannt.")
