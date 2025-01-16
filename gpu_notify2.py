@@ -42,17 +42,18 @@ def format_gpu_title(gpu):
         model = ' '.join(model_parts[1:])  # Z.B. "UHD Graphics 620" -> "UHD 620"
     else:
         model = "Modell unbekannt"
-
-    return f"{manufacturer} {model}", full_manufacturer
+    print(manufacturer)
+    print(model)
+    return manufacturer, model
 
 def display_gpu_info():
     gpu_info = get_gpu_info()
     
     for gpu in gpu_info:
-        notification_title, full_manufacturer = format_gpu_title(gpu)
+        hersteller, generation = format_gpu_title(gpu)
         
         # Sende die Benachrichtigung mit notify-send
-        subprocess.run(['notify-send', '-a', 'GPU Detector', notification_title, f"{full_manufacturer}: {gpu}", '-t', '5000'])  # 5000 ms = 5 Sekunden
+        subprocess.run(['notify-send', '-a', 'GPU Detector', hersteller, generation, '-t', '5000'])  # 5000 ms = 5 Sekunden
 
 if __name__ == "__main__":
     display_gpu_info()
