@@ -1,4 +1,5 @@
 import subprocess
+import re
 
 def get_gpu_info():
     try:
@@ -14,46 +15,38 @@ def get_gpu_info():
     except Exception as e:
         return [f"Ein Fehler ist aufgetreten: {e}"]
 
-def format_gpu_title(gpu):
-    # Bestimme den Hersteller und die Modellbezeichnung
+def format_gpu_manufacturer(gpu):
     if 'NVIDIA' in gpu:
         manufacturer = "NVIDIA"
-        full_manufacturer = "NVIDIA Corporation"
     elif 'AMD' in gpu or 'Advanced Micro Devices' in gpu or 'American Micro Devices' in gpu:
         manufacturer = "AMD"
-        full_manufacturer = "Advanced Micro Devices"
     elif 'Intel' in gpu:
         manufacturer = "INTEL"
-        full_manufacturer = "Intel Corporation"
     else:
         manufacturer = "UNBEKANNT"
-        full_manufacturer = "Unbekannt"
 
-    # Extrahiere die Modellbezeichnung
-    model_start = gpu.split(':', 2)[2].strip() if ':' in gpu else gpu
-    model_parts = model_start.split(' ')
+    return manufacturer
+
+def format_gpu_model(gpu):
+    end = gpu.rfind(']')
     
-    # Halte die Modellbezeichnung kurz und lesbar
-    if manufacturer == "NVIDIA":
-        model = ' '.join(model_parts[1:3])  # Z.B. "GeForce GTX 1060" -> "GTX 1060"
-    elif manufacturer == "AMD":
-        model = ' '.join(model_parts[1:])  # Z.B. "Radeon RX 580" -> "RX 580"
-    elif manufacturer == "INTEL":
-        model = ' '.join(model_parts[1:])  # Z.B. "UHD Graphics 620" -> "UHD 620"
-    else:
-        model = "Modell unbekannt"
-    print(manufacturer)
-    print(model)
-    return manufacturer, model
+    if end != -1:
+        start = gpu.rfind('[', 0, end)  # Suche nach der letzten öffnenden Klammer vor der schließenden Klammer
+        if start != -1:
+            return gpu[start + 1:end].strip()  # Gibt den Text zwischen den Klammern zurück
+    return "Modell unbekannt"
+
 
 def display_gpu_info():
     gpu_info = get_gpu_info()
     
     for gpu in gpu_info:
-        hersteller, generation = format_gpu_title(gpu)
+        print(gpu)
+        titel = format_gpu_manufacturer(gpu)
+        text = format_gpu_model(gpu)
         
         # Sende die Benachrichtigung mit notify-send
-        subprocess.run(['notify-send', '-a', 'GPU Detector', hersteller, generation, '-t', '5000'])  # 5000 ms = 5 Sekunden
+        subprocess.run(['notify-send', '-a', 'GPU Detector', titel, text, '-t', '5000'])  # 5000 ms = 5 Sekunden
 
 if __name__ == "__main__":
     display_gpu_info()
