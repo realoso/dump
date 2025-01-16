@@ -1,5 +1,6 @@
 import subprocess
 import os
+import re
 
 def is_nvidia_prime_installed():
     try:
@@ -37,6 +38,18 @@ def check_prime_select():
     except:
         return False
 
+def get_installed_gpus():
+    try:
+        result = subprocess.run(['lspci'], stdout=subprocess.PIPE, text=True)
+        gpus = []
+        for line in result.stdout.splitlines():
+            if 'VGA compatible controller' in line or '3D controller' in line:
+                gpus.append(line.strip())
+        return gpus
+    except Exception as e:
+        print(f"Fehler beim Abrufen der Grafikkarten: {e}")
+        return []
+
 def is_nvidia_optimus():
     nvidia_prime = is_nvidia_prime_installed()
     bumblebee = is_bumblebee_installed()
@@ -44,17 +57,20 @@ def is_nvidia_optimus():
     xorg_check = check_xorg_log()
     prime_check = check_prime_select()
 
-    has_nvidia = nvidia_prime or bumblebee or xorg_check
-    has_other_gpu = drm_check  # Überprüfen, ob mindestens eine andere GPU vorhanden ist
-
-    return has_nvidia, has_other_gpu
+    return (nvidia_prime or bumblebee) and (drm_check or xorg_check or prime_check)
 
 if __name__ == "__main__":
-    has_nvidia, has_other_gpu = is_nvidia_optimus()
-    
-    if has_nvidia and has_other_gpu:
-        print("NVIDIA Optimus-Konfiguration wahrscheinlich vorhanden.")
-    elif has_nvidia:
-        print("NVIDIA-Grafikkarte erkannt, aber keine andere GPU gefunden.")
+    gpus = get_installed_gpus()
+    has_nvidia = any('NVIDIA' in gpu for gpu in gpus)
+    has_other_gpus = len(gpus) > 1  # Überprüfen, ob mehr als eine GPU vorhanden ist
+
+    if is_nvidia_optimus():
+        if has_nvidia and has_other_gpus:
+            print("NVIDIA Optimus-Konfiguration wahrscheinlich vorhanden.")
+            print("Gefundene Grafikkarten:")
+            for gpu in gpus:
+                print(f" - {gpu}")
+        else:
+            print("NVIDIA-Grafikkarte erkannt, aber keine andere GPU gefunden.")
     else:
         print("Keine NVIDIA Optimus-Konfiguration erkannt.")
